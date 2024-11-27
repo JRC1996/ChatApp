@@ -23,6 +23,7 @@ public partial class ChatAppContext : DbContext
 
     public virtual DbSet<UsersParticipant> UsersParticipants { get; set; }
 
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<ChatRoom>(entity =>
