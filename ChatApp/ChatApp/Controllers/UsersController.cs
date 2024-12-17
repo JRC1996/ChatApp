@@ -1,9 +1,11 @@
 ﻿using Azure;
 using ChatApp.Models;
-using ChatApp.Models.Viewmodels;
+using ChatApp.Models.Services;
+using ChatApp.Models.ViewModels;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+
 
 namespace ChatApp.Controllers
 {
@@ -14,21 +16,23 @@ namespace ChatApp.Controllers
     {
 
       private readonly ChatAppContext _chatAppContext;
+      private IUserService _userService;
 
-        public UsersController(ChatAppContext chatAppContext)
+        public UsersController(ChatAppContext chatAppContext, IUserService userService)
         {
-                
+            _userService = userService;
             _chatAppContext = chatAppContext;
         }
 
         [HttpPost("register")]
         public async Task<IActionResult> Register(RegisterViewmodel Uvm, CancellationToken cancellationToken)
         {
+               
 
             var response = new Models.Response.Response();
 
 
-            using (var transact = _chatAppContext.Database.BeginTransaction()) 
+            using (var transact = await _chatAppContext.Database.BeginTransactionAsync()) 
             {
 
                 try
@@ -49,7 +53,7 @@ namespace ChatApp.Controllers
 
                     if (Uvm.Password != Uvm.ComfirmPassword || !userEmail) 
                     {
-                        transact.Rollback();
+                        await transact.RollbackAsync();
                         response.Message = "Error in one or more fields";
                         return BadRequest(response);
                     
@@ -58,7 +62,7 @@ namespace ChatApp.Controllers
                     await _chatAppContext.Users.AddAsync(user, cancellationToken);
                     await _chatAppContext.SaveChangesAsync(cancellationToken);
 
-                    transact.Commit();
+                    await transact.CommitAsync();
 
                     response.Success = 1;
                     response.Message = "User added";
@@ -67,7 +71,7 @@ namespace ChatApp.Controllers
                 }
                 catch (Exception ex)
                 {
-                    transact.Rollback();
+                    await transact.RollbackAsync();
                     response.Message = ex.Message;
                     return BadRequest(response);
 
@@ -86,27 +90,29 @@ namespace ChatApp.Controllers
 
 
         [HttpPost("login")]
-        public async Task<IActionResult> Login(LoginViewmodel lvm, CancellationToken cancellationToken) 
+        public async Task<IActionResult> Login(AuthViewmodel avm, CancellationToken cancellationToken) 
         {
 
-            var user = await _chatAppContext.Users.FirstOrDefaultAsync(u => u.Email == lvm.Email
-            && u.Password == lvm.Password, cancellationToken);
 
-            try 
-            { 
-            
-            
-            } 
-            catch (Exception ex) 
+
+            var response = new Models.Response.Response();
+            var userResponse = await _userService.Auth(avm, cancellationToken);
+
+           
+            if (userResponse == null) 
             {
-
-
-
+                response.Message = "Incorrect credentials";
+                response.Success = 0;
+                return BadRequest(response);                
             }
 
+            response.Success = 1;
+            response.Message = "All good";
+            response.Data = userResponse;
 
-            return Ok();
-        
+            return Ok(response);
+           
+            
         }
     }
 }
