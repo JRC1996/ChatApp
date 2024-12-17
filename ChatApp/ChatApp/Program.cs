@@ -1,8 +1,11 @@
 using ChatApp.Client.Pages;
 using ChatApp.Components;
 using ChatApp.Models;
+using ChatApp.Models.Common;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -13,26 +16,37 @@ builder.Services.AddRazorComponents()
 var app = builder.Build();
 
 
-builder.Services.AddAuthentication(options => 
+var appSettingsSection = builder.Configuration.GetSection("AppSettings");
+builder.Services.Configure<AppSettings>(appSettingsSection);
+
+
+//JWT
+var appSettings = appSettingsSection.Get<AppSettings>();
+var key = Encoding.ASCII.GetBytes(appSettings.Secret);
+builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
-}).AddJwtBearer(options => 
-{ 
-  //  options.TokenValidationParameters
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+    .AddJwtBearer(d => {
+        d.RequireHttpsMetadata = false;
+        d.SaveToken = true;
+        d.TokenValidationParameters = new TokenValidationParameters
+        {
 
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(key),
+            ValidateIssuer = false,
+            ValidateAudience = false
 
-});
+        };
+    });
 
-
-//DB
-builder.Configuration.AddUserSecrets<Program>();
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
-builder.Services.AddDbContext<ChatAppContext>(options =>
-options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
+    builder.Configuration.AddUserSecrets<Program>();
     app.UseWebAssemblyDebugging();
 }
 else
@@ -42,10 +56,18 @@ else
     app.UseHsts();
 }
 
+//DB
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+builder.Services.AddDbContext<ChatAppContext>(options =>
+options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
 app.UseHttpsRedirection();
 
 app.UseStaticFiles();
 app.UseAntiforgery();
+app.UseAuthentication();
+app.UseAuthorization();
+app.MapControllers();
 
 app.MapRazorComponents<App>()
     .AddInteractiveWebAssemblyRenderMode()

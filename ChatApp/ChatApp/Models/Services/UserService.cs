@@ -1,6 +1,7 @@
 ﻿using ChatApp.Models.Common;
 using ChatApp.Models.Response;
-using ChatApp.Models.Viewmodels;
+using ChatApp.Models.ViewModels;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
@@ -14,8 +15,12 @@ namespace ChatApp.Models.Services
     /// <summary>
     /// This part is pending for changes
     /// </summary>
+    /// 
+
+
     public class UserService
     {
+
 
         private readonly ChatAppContext _context;
         private readonly AppSettings _appSettings;
@@ -27,14 +32,14 @@ namespace ChatApp.Models.Services
 
         }
 
-        public UserResponse Auth(AuthViewmodel model)
+        public async Task<UserResponse> Auth(AuthViewmodel model, CancellationToken cancellationToken)
         {
             UserResponse userResponse = new UserResponse();
 
 
 
             var spassword = Encrypt.GetSHA256(model.Password);
-            var user = _context.Users.Where(u => u.Email == model.Email && u.Password == spassword).FirstOrDefault();
+            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email && u.Password == spassword, cancellationToken);
 
             if (user == null) return null;
 
@@ -47,7 +52,7 @@ namespace ChatApp.Models.Services
         }
 
 
-        private string GetToken(User user)
+        public string GetToken(User user)
         {
 
             var tokenHandler = new JwtSecurityTokenHandler();
@@ -63,12 +68,14 @@ namespace ChatApp.Models.Services
                         new Claim(ClaimTypes.NameIdentifier, user.Email)
 
                     }),
-                Expires = DateTime.UtcNow.AddMinutes(10),
+                Expires = DateTime.UtcNow.AddMinutes(30),
                 SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
             };
 
             var token = tokenHandler.CreateToken(tokenDescriptor);
             return tokenHandler.WriteToken(token);
         }
+
     }
 }
+

@@ -1,14 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations.Schema;
+using System.ComponentModel.DataAnnotations;
 
-namespace ChatApp.Models.Viewmodels
+namespace ChatApp.Models.ViewModels
 {
     public class RegisterViewmodel
     {
-
         public int Id { get; set; }
 
-        [Required(ErrorMessage ="This field is required")]
+        [Required(ErrorMessage = "This field is required")]
         [StringLength(50, ErrorMessage = "Max length is 50")]
         public string Name { get; set; } = null!;
         [Required(ErrorMessage = "This field is required")]
@@ -16,8 +15,8 @@ namespace ChatApp.Models.Viewmodels
         public string Surname { get; set; } = null!;
 
         [Required(ErrorMessage = "This field is required")]
-        [StringLength(50,ErrorMessage ="Max length is 50")]
-        [EmailAddress(ErrorMessage ="Invalid email")]
+        [StringLength(50, ErrorMessage = "Max length is 50")]
+        [EmailAddress(ErrorMessage = "Invalid email")]
         public string Email { get; set; } = null!;
 
         [Required(ErrorMessage = "This field is required"), DataType(DataType.Password)]
