@@ -6,6 +6,6 @@ namespace ChatApp.Models.Services
     public interface IUserService
     {
 
-        Task<UserResponse>  Auth(AuthViewmodel model, CancellationToken cancellation);
+        Task <UserResponse>  Auth(AuthViewmodel model, CancellationToken cancellation);
     }
 }
