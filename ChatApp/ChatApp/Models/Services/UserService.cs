@@ -18,7 +18,7 @@ namespace ChatApp.Models.Services
     /// 
 
 
-    public class UserService
+    public class UserService: IUserService
     {
 
 
